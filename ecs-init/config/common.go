@@ -16,11 +16,12 @@ package config
 import (
 	"os"
 	"strings"
+	"io/ioutil"
 )
 
 const (
 	// AgentImageName is the name of the Docker image containing the Agent
-	AgentImageName = "amazon/amazon-ecs-agent:latest"
+	AgentImageNameDefault = "amazon/amazon-ecs-agent:latest"
 
 	// AgentContainerName is the name of the Agent container started by this program
 	AgentContainerName = "ecs-agent"
@@ -37,6 +38,16 @@ const (
 	// S3BucketMap.
 	DefaultRegionName = "default"
 )
+
+var config = loadConfig()
+func defaultVar(varName string, defaultValue string) string {
+	if v:=config[varName]; v != "" {
+		return v
+	}
+	return defaultValue
+}
+
+var AgentImageName = defaultVar("ECS_AGENT_IMAGE_NAME", AgentImageNameDefault)
 
 // regionToS3BucketURL provides a mapping of region names to specific URI's for the region.
 var regionToS3BucketURL = map[string]string{
@@ -124,3 +135,27 @@ func getBaseLocationForRegion(regionName string) string {
 
 	return s3BucketURL
 }
+
+
+func loadConfig() map[string]string {
+	configFile := AgentConfigFile()
+
+	envVariables := make(map[string]string)
+
+	file, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return envVariables
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(file)), "\n")
+	for _, line := range lines {
+		parts := strings.SplitN(strings.TrimSpace(line), "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		envVariables[parts[0]] = parts[1]
+	}
+
+	return envVariables
+}
+

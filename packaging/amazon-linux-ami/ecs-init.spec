@@ -13,7 +13,7 @@
 # limitations under the License.
 
 Name:           ecs-init
-Version:        1.14.3
+Version:        1.14.3.configurable_images 
 Release:        1%{?dist}
 Group:          System Environment/Base
 Vendor:         Amazon.com
