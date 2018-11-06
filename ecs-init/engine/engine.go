@@ -25,6 +25,8 @@ import (
 	"github.com/aws/amazon-ecs-init/ecs-init/exec/sysctl"
 
 	log "github.com/cihub/seelog"
+	"github.com/aws/amazon-ecs-init/ecs-init/config"
+	"image"
 )
 
 const (
@@ -80,17 +82,19 @@ func (e *Engine) PreStart() error {
 		return engineError("could not create route to the credentials proxy", err)
 	}
 
-	cached := e.downloader.IsAgentCached()
-	if !cached {
-		return e.downloadAndLoadCache()
-	}
+	if (!config.CustomAgentImage) {
+		cached := e.downloader.IsAgentCached()
+		if !cached {
+			return e.downloadAndLoadCache()
+		}
 
-	loaded, err := e.docker.IsAgentImageLoaded()
-	if err != nil {
-		return engineError("could not check if Agent is loaded", err)
-	}
-	if !loaded {
-		return e.load(e.downloader.LoadCachedAgent())
+		loaded, err := e.docker.IsAgentImageLoaded()
+		if err != nil {
+			return engineError("could not check if Agent is loaded", err)
+		}
+		if !loaded {
+			return e.load(e.downloader.LoadCachedAgent())
+		}
 	}
 
 	return nil
@@ -152,9 +156,13 @@ func (e *Engine) StartSupervised() error {
 		}
 		log.Infof("Agent exited with code %d", agentExitCode)
 		if agentExitCode == upgradeAgentExitCode {
-			err = e.upgradeAgent()
-			if err != nil {
-				log.Error("could not upgrade agent", err)
+			if (config.CustomAgentImage) {
+				log.Warn("Trying to upgrade agent that is locked to:", config.AgentImageName)
+			} else {
+				err = e.upgradeAgent()
+				if err != nil {
+					log.Error("could not upgrade agent", err)
+				}
 			}
 		}
 	}

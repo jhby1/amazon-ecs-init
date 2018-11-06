@@ -48,6 +48,7 @@ func defaultVar(varName string, defaultValue string) string {
 }
 
 var AgentImageName = defaultVar("ECS_AGENT_IMAGE_NAME", AgentImageNameDefault)
+var CustomAgentImage = AgentImageName != AgentImageNameDefault
 
 // regionToS3BucketURL provides a mapping of region names to specific URI's for the region.
 var regionToS3BucketURL = map[string]string{
